@@ -1,10 +1,13 @@
-const express = require('express');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);const express = require('express');
 const router = express.Router();
 const Inquiry = require('../models/Inquiry');
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -24,7 +27,20 @@ router.post('/', async (req, res) => {
     const inquiry = new Inquiry({ name, phone, email, documentType, country, message });
     await inquiry.save();
     console.log('✅ MongoDB saved');
-
+    await resend.emails.send({
+  from: 'onboarding@resend.dev',
+  to: process.env.ADMIN_EMAIL,
+  subject: `🔔 New Inquiry - ${name}`,
+  html: `
+    <h2>New Attestation Inquiry</h2>
+    <p><b>Name:</b> ${name}</p>
+    <p><b>Phone:</b> ${phone}</p>
+    <p><b>Email:</b> ${email}</p>
+    <p><b>Document:</b> ${documentType}</p>
+    <p><b>Country:</b> ${country}</p>
+    <p><b>Message:</b> ${message}</p>
+  `
+});
     // 2. Email to Admin
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
