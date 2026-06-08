@@ -15,9 +15,15 @@ router.post('/', async (req, res) => {
   try {
     const { name, phone, email, documentType, country, message } = req.body;
 
+    console.log('📩 Form data:', { name, phone, email });
+    console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('📧 ADMIN_EMAIL:', process.env.ADMIN_EMAIL);
+    console.log('📧 PASS exists:', !!process.env.EMAIL_PASS);
+
     // 1. MongoDB save
     const inquiry = new Inquiry({ name, phone, email, documentType, country, message });
     await inquiry.save();
+    console.log('✅ MongoDB saved');
 
     // 2. Email to Admin
     await transporter.sendMail({
@@ -34,8 +40,9 @@ router.post('/', async (req, res) => {
         <p><b>Message:</b> ${message}</p>
       `
     });
+    console.log('✅ Mail sent!');
 
-    // 3. WhatsApp link response mein bhejo
+    // 3. WhatsApp link
     const whatsappMsg = encodeURIComponent(
       `🔔 New Inquiry!\nName: ${name}\nPhone: ${phone}\nDocument: ${documentType}\nCountry: ${country}`
     );
@@ -48,7 +55,8 @@ router.post('/', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('ERROR =>', err.message);
+    console.error('❌ ERROR =>', err.message);
+    console.error('❌ FULL ERROR =>', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
